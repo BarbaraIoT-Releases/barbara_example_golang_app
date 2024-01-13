@@ -4,14 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Jeffail/gabs/v2"
-	"io/ioutil"
-	"os"
 	"time"
 )
 
 func addLog(tag string, logString string, level int) {
 	// only show formatted logs if debugLevel (app config value with a default value of 2)
-	// is greater than level parameter)
+	// is greater than level parameter
 	if debugLevel >= level {
 		fmt.Println(time.Now().Format("[ 2006-01-02 15:04:05 ]") + " [ " + tag + " ] [ " + logString + " ]")
 	}
@@ -19,7 +17,7 @@ func addLog(tag string, logString string, level int) {
 
 func getAppConfig(configKey string) (interface{}, error) {
 	// Parse app config json file and return error if exists
-	appConfigMap, appConfigMapErr := parseJSON(appConfigPath)
+	appConfigMap, appConfigMapErr := gabs.ParseJSONFile(appConfigPath)
 	if appConfigMapErr != nil {
 		return nil, appConfigMapErr
 	}
@@ -30,14 +28,33 @@ func getAppConfig(configKey string) (interface{}, error) {
 			return appConfigValue.Data(), nil
 		}
 	}
-	// if provided key does not exists, return an error
+	// if provided key does not exist, return an error
 	return nil, errors.New("No " + configKey + " app config key found")
+}
+
+func getDeviceID() string {
+	// Parse app config json file and return error if exists
+	appConfigMap, appConfigMapErr := gabs.ParseJSONFile(barbaraIDPath)
+	if appConfigMapErr != nil {
+		return ""
+	}
+
+	// Try to find the provided key on the map
+	for appConfigKey, appConfigValue := range appConfigMap.ChildrenMap() {
+		if "id" == appConfigKey {
+			return appConfigValue.Data().(string)
+		}
+	}
+
+	// if provided key does not exist, return an empty string
+	return ""
 }
 
 func initMessage() {
 	addLog(logTag, "=================================", 2)
 	addLog(logTag, "App name: "+logTag, 2)
 	addLog(logTag, "App version: "+version, 2)
+	addLog(logTag, "Device ID: "+getDeviceID(), 2)
 	addLog(logTag, "=================================", 2)
 }
 
@@ -75,23 +92,4 @@ func interfaceToString(providedInterface interface{}) (string, error) {
 		}
 	}
 	return "", errors.New("nil interface")
-}
-
-func parseJSON(jsonPath string) (*gabs.Container, error) {
-	jsonFile, jsonFileErr := os.Open(jsonPath)
-	if jsonFileErr != nil {
-		return nil, errors.New("parseJSON: " + jsonFileErr.Error())
-	}
-	defer func() {
-		jsonFileErr := jsonFile.Close()
-		if jsonFileErr != nil {
-			return
-		}
-	}()
-	jsonBytes, jsonBytesErr := ioutil.ReadAll(jsonFile)
-	if jsonBytesErr != nil {
-		return nil, errors.New("failed to parse json file: " + jsonPath + ". Error: " + jsonBytesErr.Error())
-	}
-
-	return gabs.ParseJSON(jsonBytes)
 }

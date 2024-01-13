@@ -3,8 +3,9 @@ package main
 import "time"
 
 const (
+	barbaraIDPath = "/etc/barbara_id.json"
 	appConfigPath = "/appconfig/appconfig.json"
-	logTag        = "baseApp"
+	logTag        = "logApp"
 	appSleepTime  = time.Duration(5) * time.Second
 )
 
